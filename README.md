@@ -2,7 +2,6 @@
 
 X-WAF是一款适用中、小企业的云WAF系统，让中、小企业也可以非常方便地拥有自己的免费云WAF。
 
-文档地址：[https://waf.xsec.io/](https://waf.xsec.io/)
 
 # 主要特性
 
