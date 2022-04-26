@@ -1,22 +1,5 @@
 --[[
 
-Copyright (c) 2016 xsec.io
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THEq
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
 
 ]]
 
@@ -110,20 +93,6 @@ function _M.get_server_host()
     return host
 end
 
--- Get all rule file name by lfs
---function _M.get_rule_files(rules_path)
---local lfs = require("lfs")
---    local rule_files = {}
---    for file in lfs.dir(rules_path) do
---        if file ~= "." and file ~= ".." then
---            local file_name = rules_path .. '/' .. file
---            ngx.log(ngx.DEBUG, string.format("rule key:%s, rule file name:%s", file, file_name))
---            rule_files[file] = file_name
---        end
---    end
---    return rule_files
---end
-
 -- WAF log record for json
 function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
     local log_path = config_log_dir
@@ -156,17 +125,50 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
     file:close()
 end
 
+-- forbid ip response
+function _M.forbid(flag)
+    -- 如果多次请求被拦截，那么就封锁更长时间，但是也不是黑名单
+    if config.config_ipcc_check == "on" then
+        local IPCC_TOKEN = _M.get_client_ip()
+        local limit = ngx.shared.limit
+        local IPCCcount = tonumber(string.match(config.config_ipcc_rate, '(.*)/'))
+        local IPCCseconds = tonumber(string.match(config.config_ipcc_rate, '/(.*)'))
+        local req, _ = limit:get(IPCC_TOKEN)
+        if req then
+            if req > IPCCcount then
+                if config.config_waf_enable == "on" then
+                    -- ngx.say(IPCC_TOKEN..':'..req)
+                    ngx.say('由于ip:'..IPCC_TOKEN.."非法请求次数过多，现被封禁2小时!")
+                    ngx.exit(403)
+                end
+            else
+                if flag then
+                else
+                    limit:incr(IPCC_TOKEN, 1)
+                end
+            end
+        else
+            limit:set(IPCC_TOKEN, 1, IPCCseconds)
+        end
+    end
+    
+end
 -- WAF response
 function _M.waf_output()
+  -- 检查是否禁用
+    _M.forbid(false)
     if config.config_waf_model == "redirect" then
         ngx.redirect(config.config_waf_redirect_url, 301)
     elseif config.config_waf_model == "jinghuashuiyue" then
         local bad_guy_ip = _M.get_client_ip()
         _M.set_bad_guys(bad_guy_ip, config.config_expire_time)
     else
+        local IPCC_TOKEN = _M.get_client_ip()
+        local limit = ngx.shared.limit
+        local req, _ = limit:get(IPCC_TOKEN)
         ngx.header.content_type = "text/html"
         ngx.status = ngx.HTTP_FORBIDDEN
-        ngx.say(string.format(config.config_output_html, _M.get_client_ip()))
+        ngx.say(string.format(config.config_output_html, _M.get_client_ip(), req))
         ngx.exit(ngx.status)
     end
 end
