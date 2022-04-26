@@ -1,23 +1,5 @@
 --[[
 
-Copyright (c) 2016 xsec.io
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THEq
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 ]]
 
 -- WAF config file, enable = "on", disable = "off"
@@ -46,19 +28,23 @@ local _M = {
     -- enable/disable cc filtering
     config_cc_check = "on",
     -- cc rate the xxx of xxx seconds
-    config_cc_rate = "10/60",
+    config_cc_rate = "300/60",
+    -- enable/disable cc filtering
+    config_ipcc_check = 'on',
+    -- ipcc rate the xxx of xxx seconds，#########ip请求，100次，否则就封禁2小时
+    config_ipcc_rate = "120/7200",
     -- enable/disable post filtering
     config_post_check = "on",
     -- config waf output redirect/html/jinghuashuiyue
     config_waf_model = "html",
     -- if config_waf_output ,setting url
-    config_waf_redirect_url = "http://xsec.io",
+    config_waf_redirect_url = "",
     config_expire_time = 600,
     config_output_html = [[
     <html>
     <head>
     <meta charset="UTF-8">
-    <title>MIDUN WAF</title>
+    <title>网站防火墙</title>
     </head>
       <body>
         <div>
@@ -68,10 +54,7 @@ local _M = {
             您的IP为: %s
           </div>
           <div class="cell">
-            欢迎在遵守白帽子道德准则的情况下进行安全测试。
-          </div>
-          <div class="cell">
-            联系方式：http://xsec.io
+             <p class="t1">您的请求带有不合法参数，已被网站管理员设置拦截%s次！</p>
           </div>
         </div>
       </div>
@@ -79,6 +62,7 @@ local _M = {
       </body>
     </html>
     ]],
+
 }
 
 return _M
