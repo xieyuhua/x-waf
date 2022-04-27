@@ -7,6 +7,7 @@ local io = require("io")
 local cjson = require("cjson.safe")
 local string = require("string")
 local config = require("config")
+local mysql = require "resty.mysql"
 
 local _M = {
     version = "0.1",
@@ -110,6 +111,42 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
         req_data = data,
         rule_tag = ruletag,
     }
+    
+    local db = mysql:new()
+    local ok,err = db:connect{
+        host="127.0.0.1",
+        port=3306,
+        user="waf",
+        password="waf",
+        database="waf"
+    }
+    if not ok then
+      ngx.say("new  mysql error:", err)
+      return
+    end
+    db:set_timeout(100)
+    
+    -- CREATE TABLE `waf_log` (
+    -- 	`id` INT(11) NOT NULL AUTO_INCREMENT,
+    -- 	`client_ip` VARCHAR(100) NULL DEFAULT NULL,
+    -- 	`local_time` VARCHAR(100) NULL DEFAULT NULL,
+    -- 	`server_name` VARCHAR(100) NULL DEFAULT NULL,
+    -- 	`user_agent` VARCHAR(200) NULL DEFAULT NULL,
+    -- 	`attack_type` VARCHAR(200) NULL DEFAULT NULL,
+    -- 	`req_url` VARCHAR(200) NULL DEFAULT NULL,
+    -- 	`req_data` VARCHAR(200) NULL DEFAULT NULL,
+    -- 	`rule_tag` VARCHAR(200) NULL DEFAULT NULL,
+    -- 	PRIMARY KEY (`id`)
+    -- )
+    -- COMMENT='拦截日志'
+    -- COLLATE='utf8_general_ci'
+    -- ENGINE=InnoDB
+    -- ;
+
+    
+    local insert_sql =  "insert into waf_log (client_ip,local_time,server_name,user_agent,attack_type,req_url,req_data,rule_tag) values(\'"..client_IP.."\',\'"..local_time.."\',\'"..server_name.."\',\'"..user_agent.."\',\'"..attack_type.."\',\'"..url.."\',\'"..data.."\',\'"..ruletag.."\')"
+    res, err, errno, sqlstate = db:query(insert_sql)
+    db:close()
 
     local log_line = cjson.encode(log_json_obj)
     local log_name = string.format("%s/%s_waf.log", log_path, ngx.today())
