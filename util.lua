@@ -166,6 +166,13 @@ function _M.waf_output()
         local IPCC_TOKEN = _M.get_client_ip()
         local limit = ngx.shared.limit
         local req, _ = limit:get(IPCC_TOKEN)
+        local seedcode = math.random(99999999)
+        local fingerprint = ngx.md5("x-waf" ..  _M.get_client_ip() .. seedcode)
+        local expire = ngx.cookie_time(ngx.time() + 5 * 60)
+        ngx.header['Set-Cookie'] = {
+            'seedcode=' .. seedcode .. '; path=/; Expires=' .. expire,
+            'fingerprint=' .. fingerprint .. '; path=/; Expires=' .. expire
+        }
         ngx.header.content_type = "text/html"
         ngx.status = ngx.HTTP_FORBIDDEN
         ngx.say(string.format(config.config_output_html, _M.get_client_ip(), req))
