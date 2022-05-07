@@ -6,45 +6,6 @@ local iputils = require('iputils')
 local util    = require("util")
 local realip =  util.get_client_ip()
 require("iop")
-Ip2Region = require("ip2region")
-
-ip2region = nil
-ip2region_file = io.open("/www/server/nginx/x-waf/ip2region.db", "r")
-if ip2region_file then
-    io.close(ip2region_file)
-    ip2region = Ip2Region.new("/www/server/nginx/x-waf/ip2region.db")
-end
-function parse_ipinfo(ip)
-    local ipinfo = {'0', '0', '0', '0'}
-    if ip2region then
-        local data = ip2region:memorySearch(ip)
-        local country = nil
-        local region = nil
-        local city = nil
-        local isp = nil
-        local tmp = {}
-        if data and data.region then
-            string.gsub(data.region, "[^|]+", function(w) table.insert(tmp, w) end )
-            for key, value in pairs(tmp) do
-                if key == 1 and value ~= '0' then
-                    country = value
-                end
-                if key == 3 and value ~= '0' then
-                    region = value
-                end
-                if key == 4 and value ~= '0' then
-                    city = value
-                end
-                if key == 5 and value ~= '0' then
-                    isp = value
-                end
-            end
-            ipinfo = {country, region, city, isp}
-        end
-    end
-    return ipinfo
-end
-
 
 --[站点控制]--
 has_domain = false
@@ -124,10 +85,6 @@ if in_open then
     return 
 end
 
-
--- ip地址信息
-local suspected = parse_ipinfo(realip)
--- ngx.say(suspected)
 
 
 -- waf
