@@ -8,6 +8,7 @@ local cjson = require("cjson.safe")
 local string = require("string")
 local config = require("config")
 local mysql = require "resty.mysql"
+local Ip2Region = require("ip2region")
 
 local _M = {
     version = "0.1",
@@ -23,6 +24,60 @@ local _M = {
         "whiteUrl.rule"
     }
 }
+
+
+
+function _M.parse_ipinfo(ip)
+    
+    ip2region = nil
+    ip2region_file = io.open("/www/server/nginx/x-waf/ip2region.db", "r")
+    if ip2region_file then
+        io.close(ip2region_file)
+        ip2region = Ip2Region.new("/www/server/nginx/x-waf/ip2region.db")
+    end
+    
+    local ipinfo = ''
+    if ip2region then
+        local data = ip2region:memorySearch(ip)
+        local country = nil
+        local region = nil
+        local city = nil
+        local isp = nil
+        local tmp = {}
+        if data and data.region then
+            string.gsub(data.region, "[^|]+", function(w) table.insert(tmp, w) end )
+            for key, value in pairs(tmp) do
+                if key == 1 and value ~= '0' then
+                    country = value
+                end
+                if key == 3 and value ~= '0' then
+                    region = value
+                end
+                if key == 4 and value ~= '0' then
+                    city = value
+                end
+                if key == 5 and value ~= '0' then
+                    isp = value
+                end
+            end
+            
+            if country~=nill then
+                ipinfo = ipinfo..country
+            end
+            if region~=nill then
+                ipinfo = ipinfo..region
+            end   
+            if city~=nill then
+                ipinfo = ipinfo..city
+            end
+            if isp~=nill then
+                ipinfo = ipinfo..isp
+            end
+        end
+    end
+    return ipinfo
+end
+
 
 -- Get all rule file name
 function _M.get_rule_files(rules_path)
@@ -101,6 +156,7 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
     local user_agent = _M.get_user_agent()
     local server_name = ngx.var.server_name
     local local_time = ngx.localtime()
+    local area = _M.parse_ipinfo(client_IP)
     local log_json_obj = {
         client_ip = client_IP,
         local_time = local_time,
@@ -108,6 +164,7 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
         user_agent = user_agent,
         attack_type = attack_type,
         req_url = url,
+        area = area,
         req_data = data,
         rule_tag = ruletag,
     }
@@ -121,7 +178,7 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
         database="waf"
     }
     if not ok then
-      ngx.say("new  mysql error:", err)
+      ngx.say("new error:", err)
       return
     end
     db:set_timeout(100)
@@ -143,8 +200,11 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
     -- ENGINE=InnoDB
     -- ;
 
+    if req_url==nil then
+        req_url = '-'
+    end
     
-    local insert_sql =  "insert into waf_log (client_ip,local_time,server_name,user_agent,attack_type,req_url,req_data,rule_tag) values(\'"..client_IP.."\',\'"..local_time.."\',\'"..server_name.."\',\'"..user_agent.."\',\'"..attack_type.."\',\'"..url.."\',\'"..data.."\',\'"..ruletag.."\')"
+    insert_sql =  "insert into waf_log (client_ip,local_time,server_name,user_agent,attack_type,req_url,req_data,rule_tag,area) values(\'"..client_IP.."\',\'"..local_time.."\',\'"..server_name.."\',\'"..user_agent.."\',\'"..attack_type.."\',\'"..req_url.."\',\'"..data.."\',\'"..ruletag.."\',\'"..area.."\')"
     res, err, errno, sqlstate = db:query(insert_sql)
     db:close()
 
