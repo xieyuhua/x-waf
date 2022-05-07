@@ -4,6 +4,15 @@ X-WAF是一款适用中、小企业的云WAF系统，让中、小企业也可以
 
 优先级： 站点管理->蜘蛛ip->地区管理限制->ip白名单->ip黑名单->user-agent->白名单地址->黑名单地址->cc攻击->cookie过滤->url参数过滤->post参数过滤
 
+```
+    -- 一秒钟5次
+    config_cc_rate = "5/1",
+    config_ipcc_check = 'on',
+    -- ip请求，超过120次，则封禁2小时
+    config_ipcc_rate = "120/7200",
+```
+
+
 # 主要特性
 
 - 支持对常见WEB攻击的防御，如sql注入、xss、路径穿越，阻断扫描器的扫描等
