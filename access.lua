@@ -7,6 +7,8 @@ local util    = require("util")
 local realip =  util.get_client_ip()
 require("iop")
 
+
+
 --[站点控制]--
 has_domain = false
 domain_table = {}
@@ -79,10 +81,28 @@ if has_domain then
 end
 
 
+
+
+
+
 -- 主流厂商CDN/蜘蛛IP
 local in_open  = iputils.ip_in_cidrs(realip, iputils.parse_cidrs(ip_open_list))
 if in_open then
     return 
+end
+
+-- 过滤ftp数据处理
+local config = require("config")
+if config.config_white_url_check == "on" then
+    local URL_WHITE_RULES = waf.get_rule('whiteUrl.rule')
+    local REQ_URI = ngx.var.request_uri
+    if URL_WHITE_RULES ~= nil then
+        for _, rule in pairs(URL_WHITE_RULES) do
+            if rule ~= "" and string.find(REQ_URI, rule) then
+                return true
+            end
+        end
+    end
 end
 
 
