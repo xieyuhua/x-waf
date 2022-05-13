@@ -31,6 +31,7 @@ end
 
 -- allow white ip check
 function _M.white_ip_check()
+    
     if config.config_white_ip_check == "on" then
         local IP_WHITE_RULE = _M.get_rule('whiteip.rule')
         local WHITE_IP = util.get_client_ip()
@@ -67,10 +68,13 @@ function _M.black_ip_check()
     if config.config_black_ip_check == "on" then
         local IP_BLACK_RULE = _M.get_rule('blackip.rule')
         local BLACK_IP = util.get_client_ip()
+        
+        -- BLACK_IP = '106.91.161.188'
+        
         if IP_BLACK_RULE ~= nil then
             for _, rule in pairs(IP_BLACK_RULE) do
                 if rule ~= "" and rulematch(BLACK_IP, rule, "jo") then
-                    util.log_record(config.config_log_dir, 'BlackList_IP', ngx.var_request_uri, "_", "_")
+                    util.log_record(config.config_log_dir, '黑名单ip', ngx.var_request_uri, "_", "_")
                     if config.config_waf_enable == "on" then
                         ngx.exit(403)
                         return true
@@ -85,7 +89,7 @@ end
 -- allow white url
 function _M.white_url_check()
     if config.config_white_url_check == "on" then
-        local URL_WHITE_RULES = _M.get_rule('writeurl.rule')
+        local URL_WHITE_RULES = _M.get_rule('whiteUrl.rule')
         local REQ_URI = ngx.var.request_uri
         if URL_WHITE_RULES ~= nil then
             for _, rule in pairs(URL_WHITE_RULES) do
@@ -109,7 +113,7 @@ function _M.cc_attack_check()
         local req, _ = limit:get(CC_TOKEN)
         if req then
             if req > CCcount then
-                util.log_record(config.config_log_dir, 'CC_Attack', ngx.var.request_uri, "-", "-")
+                util.log_record(config.config_log_dir, 'cc攻击', ngx.var.request_uri, "-", "-")
                 if config.config_waf_enable == "on" then
                     ngx.exit(403)
                 end
@@ -131,7 +135,7 @@ function _M.cookie_attack_check()
         if USER_COOKIE ~= nil then
             for _, rule in pairs(COOKIE_RULES) do
                 if rule ~= "" and rulematch(USER_COOKIE, rule, "joi") then
-                    util.log_record(config.config_log_dir, 'Cookie_Attack', ngx.var.request_uri, "-", rule)
+                    util.log_record(config.config_log_dir, 'Cookie攻击', ngx.var.request_uri, "-", rule)
                     if config.config_waf_enable == "on" then
                         util.waf_output()
                         return true
@@ -150,7 +154,7 @@ function _M.url_attack_check()
         local REQ_URI = ngx.var.request_uri
         for _, rule in pairs(URL_RULES) do
             if rule ~= "" and rulematch(REQ_URI, rule, "joi") then
-                util.log_record(config.config_log_dir, 'Black_URL', REQ_URI, "-", rule)
+                util.log_record(config.config_log_dir, '黑名单url', REQ_URI, "-", rule)
                 if config.config_waf_enable == "on" then
                     util.waf_output()
                     return true
@@ -174,8 +178,9 @@ function _M.url_args_attack_check()
                 else
                     ARGS_DATA = val
                 end
+                
                 if ARGS_DATA and type(ARGS_DATA) ~= "boolean" and rule ~= "" and rulematch(unescape(ARGS_DATA), rule, "joi") then
-                    util.log_record(config.config_log_dir, 'Get_Attack', ngx.var.request_uri, "-", rule)
+                    util.log_record(config.config_log_dir, 'get参数攻击', ngx.var.request_uri, "-", rule)
                     if config.config_waf_enable == "on" then
                         util.waf_output()
                         return true
@@ -195,7 +200,7 @@ function _M.user_agent_attack_check()
         if USER_AGENT ~= nil then
             for _, rule in pairs(USER_AGENT_RULES) do
                 if rule ~= "" and rulematch(USER_AGENT, rule, "joi") then
-                    util.log_record(config.config_log_dir, 'Evil_USER_AGENT', ngx.var.request_uri, "-", rule)
+                    util.log_record(config.config_log_dir, 'user-agent攻击', ngx.var.request_uri, "-", rule)
                     if config.config_waf_enable == "on" then
                         util.waf_output()
                         return true
@@ -224,7 +229,7 @@ function _M.post_attack_check()
                     post_data = v
                 end
                 if rule ~= "" and rulematch(post_data, rule, "joi") then
-                    util.log_record(config.config_log_dir, 'Post_Attack', post_data, "-", rule)
+                    util.log_record(config.config_log_dir, 'post参数攻击', post_data, "-", rule)
                     if config.config_waf_enable == "on" then
                         util.waf_output()
                         return true
