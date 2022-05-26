@@ -200,8 +200,8 @@ function _M.log_record(config_log_dir, attack_type, url, data, ruletag)
     -- ENGINE=InnoDB
     -- ;
 
-    if req_url==nil then
-        req_url = '-'
+    if url==nil then
+        url = '-'
     end
     
     insert_sql =  "insert into waf_log (client_ip,local_time,server_name,user_agent,attack_type,req_url,req_data,rule_tag,area) values(\'"..client_IP.."\',\'"..local_time.."\',\'"..server_name.."\',\'"..user_agent.."\',\'"..attack_type.."\',\'"..req_url.."\',\'"..data.."\',\'"..ruletag.."\',\'"..area.."\')"
