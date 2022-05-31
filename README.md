@@ -12,6 +12,10 @@ X-WAF是一款适用中、小企业的云WAF系统，让中、小企业也可以
     config_ipcc_rate = "120/7200",
 ```
 
+加密为二进制
+
+/www/server/nginx/luajit/bin/luajit -b access.lua access11.lua
+
 
 # 主要特性
 
